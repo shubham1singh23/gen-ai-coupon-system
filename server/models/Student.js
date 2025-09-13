@@ -33,7 +33,6 @@ const studentSchema = new mongoose.Schema(
     },
     couponCode: {
       type: String,
-      unique: true,
       sparse: true, // This allows for multiple documents to have a null value
       trim: true,
     },
