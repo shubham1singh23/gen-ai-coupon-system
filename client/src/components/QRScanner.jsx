@@ -225,7 +225,7 @@ const QRScanner = () => {
         <div className="w-full max-w-lg mx-auto p-6 bg-gray-900 rounded-lg border border-gray-700 shadow-lg relative z-20 form-container">
             <div className="text-center mb-6">
                 <h2 className="text-2xl font-bold text-white mb-2">QR Code Scanner</h2>
-                <p className="text-gray-400 text-sm">Debug version with detailed logging</p>
+                <p className="text-gray-400 text-sm">Scan Qr Code or Enter code Manually</p>
             </div>
 
             {/* Error Message */}
