@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import axios from 'axios';
+import api from '../config/axios';
 
 const QRScanner = () => {
     const [isScanning, setIsScanning] = useState(false);
@@ -175,7 +175,7 @@ const QRScanner = () => {
         setValidationResult(null);
 
         try {
-            const response = await axios.post('/api/students/validate-coupon', {
+            const response = await api.post('/api/students/validate-coupon', {
                 couponCode: code
             });
 

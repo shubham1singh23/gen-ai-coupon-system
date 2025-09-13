@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import api from '../config/axios';
 
 const Form = () => {
     const [formData, setFormData] = useState({
@@ -25,7 +25,7 @@ const Form = () => {
         setError('');
         setLoading(true);
         try {
-            const res = await axios.post('/api/students', formData);
+            const res = await api.post('/api/students', formData);
             setMessage(res.data.msg);
             setGeneratedCoupon(res.data.student.couponCode);
             setFormData({
