@@ -14,7 +14,7 @@ const app = express();
 
 // Middleware
 app.use(cors({
-    origin: ['http://localhost:3000', 'https://gen-ai-coupon-form.vercel.app'],
+    origin: ['http://localhost:3000', 'https://gen-ai-coupon-form.vercel.app', 'https://genai-coupon-form.onrender.com'],
     methods: ['GET', 'POST'],
     credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization']
