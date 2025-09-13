@@ -50,16 +50,41 @@ function sendEmail(email,code){
   to: email,
   subject: '🎮 Your Gaming Café Coupon is Ready! 🚀',
   html: `
-    <div style="font-family: Arial, sans-serif; text-align: center; background: #1e1e2f; padding: 20px; color: #fff; border-radius: 12px;">
-      <h2 style="color: #00ff99;">🔥 Congratulations, Gamer! 🔥</h2>
-      <p style="font-size: 16px;">You've unlocked an exclusive <b>Gaming Café Coupon</b>. Show this QR code at the counter to redeem your discount and power up your playtime! ⚡</p>
-      <div style="margin: 20px 0;">
-        <img src="cid:qrcode" alt="QR Code" style="border: 5px solid #00ff99; border-radius: 10px; max-width: 200px;" />
+    <div style="font-family: Arial, sans-serif; background: #121212; padding: 25px; color: #fff; border-radius: 14px; max-width: 600px; margin: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.7);">
+      
+      <!-- Header -->
+      <div style="background: linear-gradient(90deg, #6a11cb, #2575fc); padding: 18px; border-radius: 10px;">
+        <h2 style="margin: 0; color: #fff; font-size: 24px;">🔥 Congratulations, Gamer! 🔥</h2>
       </div>
-      <p style="font-size: 18px; margin: 10px 0;">💥 Your Unique Code: <b style="color:#00ff99; font-size:20px;">${code}</b></p>
-      <p style="font-size: 14px; color: #bbb;">⚠️ Valid for one-time use only. Don’t share this code with others.</p>
-      <hr style="border: 1px solid #444; margin: 20px 0;">
-      <p style="font-size: 14px; color: #888;">Game On,<br/>🎮 [Your Café Name] Team</p>
+
+      <!-- Body -->
+      <div style="text-align: center; padding: 20px;">
+        <p style="font-size: 16px; line-height: 1.6; color: #ddd;">
+          You’ve unlocked an exclusive <b>Gaming Café Discount Coupon</b>!  
+          Show this QR code at the counter and boost your playtime ⚡
+        </p>
+
+        <!-- QR Code -->
+        <div style="margin: 25px 0;">
+          <img src="cid:qrcode" alt="QR Code" style="border: 4px solid #00ff99; border-radius: 12px; max-width: 220px; box-shadow: 0 0 20px rgba(0,255,153,0.6);" />
+        </div>
+
+        <!-- Code -->
+        <p style="font-size: 18px; margin: 15px 0; color: #fff;">
+          💥 Your Unique Code:  
+          <b style="color:#00ff99; font-size:22px;">${code}</b>
+        </p>
+
+        <p style="font-size: 14px; color: #aaa; margin-top: 10px;">
+          ⚠️ Valid for one-time use only. Please don’t share this code with others.
+        </p>
+      </div>
+
+      <!-- Footer -->
+      <hr style="border: 0; height: 1px; background: #333; margin: 20px 0;">
+      <p style="font-size: 13px; color: #888; text-align: center;">
+        Game On,<br/>🎮 <b>[Your Café Name]</b> Team
+      </p>
     </div>
   `,
   attachments: [
@@ -70,6 +95,7 @@ function sendEmail(email,code){
     }
   ]
 };
+
 
   
   
@@ -96,7 +122,7 @@ exports.registerStudent = async (req, res) => {
     student = new Student({
       collegeId,
       name,
-       email,
+      email,
       phone,
       couponType,
       couponCode: couponCode || null, 
@@ -113,3 +139,89 @@ exports.registerStudent = async (req, res) => {
   }
 };
 
+// Validate coupon code
+exports.validateCoupon = async (req, res) => {
+  const { couponCode } = req.body;
+
+  try {
+    // Find student with the given coupon code
+    const student = await Student.findOne({ couponCode });
+
+    if (!student) {
+      return res.status(404).json({ 
+        success: false,
+        msg: 'Invalid coupon code. Please try again.' 
+      });
+    }
+
+    if (student.used) {
+      return res.status(400).json({ 
+        success: false,
+        msg: 'This coupon has already been used.' 
+      });
+    }
+
+    // Check if coupon is expired (7 days)
+    const createdAt = new Date(student.createdAt);
+    const now = new Date();
+    const diffTime = Math.abs(now - createdAt);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays > 7) {
+      return res.status(400).json({ 
+        success: false,
+        msg: 'This coupon has expired.' 
+      });
+    }
+
+    // Mark coupon as used
+    student.used = true;
+    await student.save();
+
+    // Check if student is in first 50
+    const totalEarlierStudents = await Student.countDocuments({
+      createdAt: { $lt: student.createdAt }
+    });
+
+    const isInFirstFifty = totalEarlierStudents < 50;
+
+    return res.status(200).json({
+      success: true,
+      msg: 'Coupon validated successfully!',
+      data: {
+        collegeId: student.collegeId,
+        name: student.name,
+        couponType: student.couponType,
+        isInFirstFifty,
+        firstFiftyMessage: isInFirstFifty ? 'Congratulations! You are eligible for the first fifty offer!' : 'Sorry, you are not in the first fifty registrations.'
+      }
+    });
+
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ 
+      success: false,
+      msg: 'Server Error' 
+    });
+  }
+};
+
+// Get all students sorted by timestamp
+exports.getAllStudents = async (req, res) => {
+  try {
+    const students = await Student.find()
+      .sort({ createdAt: 1 }) // 1 for ascending order (oldest first)
+      .select('name collegeId couponType createdAt used'); // Select only necessary fields
+
+    res.status(200).json({ 
+      success: true,
+      data: students 
+    });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ 
+      success: false,
+      msg: 'Server Error' 
+    });
+  }
+};
