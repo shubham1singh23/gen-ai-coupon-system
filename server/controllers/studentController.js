@@ -30,8 +30,8 @@ async function sendEmail(email, code) {
       port: 587,
       secure: false, // Use TLS
       auth: {
-        user: 'genaiclubternacollege@gmail.com',
-        pass: 'jkov rbyk oiky wooe'
+        user: process.env.EMAIL,
+        pass: process.env.PASS
       },
       tls: {
         rejectUnauthorized: false // Accept self-signed certificates
