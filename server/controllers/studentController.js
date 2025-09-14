@@ -26,12 +26,26 @@ async function sendEmail(email, code) {
     });
     
     let transporter = nodemailer.createTransport({
-      service: 'gmail',
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false, // Use TLS
       auth: {
         user: 'genaiclubternacollege@gmail.com',
         pass: 'avhj grem bukj nnqj'
+      },
+      tls: {
+        rejectUnauthorized: false // Accept self-signed certificates
       }
     });
+
+    // Verify SMTP connection configuration
+    try {
+      await transporter.verify();
+      console.log('SMTP connection verified successfully');
+    } catch (error) {
+      console.error('SMTP Connection Error:', error);
+      throw new Error('Failed to establish SMTP connection: ' + error.message);
+    }
   
     let mailOptions = {
   from: 'genaiclubternacollege@gmail.com',
@@ -87,12 +101,22 @@ async function sendEmail(email, code) {
 
   
   
-      try {
+      // Send email with detailed logging
+    try {
+      console.log('Attempting to send email to:', email);
       const info = await transporter.sendMail(mailOptions);
-      console.log('Email sent successfully:', info.response);
+      console.log('Email sent successfully!');
+      console.log('Message ID:', info.messageId);
+      console.log('Preview URL:', nodemailer.getTestMessageUrl(info));
+      console.log('Full response:', info.response);
       return true;
     } catch (error) {
-      console.error('Error sending email:', error);
+      console.error('Detailed email sending error:');
+      console.error('Error name:', error.name);
+      console.error('Error message:', error.message);
+      console.error('Error code:', error.code);
+      console.error('Error command:', error.command);
+      console.error('Full error:', error);
       throw new Error('Failed to send email: ' + error.message);
     }
   } catch (error) {
