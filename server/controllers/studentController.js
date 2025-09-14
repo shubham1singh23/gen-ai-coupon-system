@@ -31,7 +31,7 @@ async function sendEmail(email, code) {
       secure: false, // Use TLS
       auth: {
         user: 'genaiclubternacollege@gmail.com',
-        pass: 'avhj grem bukj nnqj'
+        pass: 'jkov rbyk oiky wooe'
       },
       tls: {
         rejectUnauthorized: false // Accept self-signed certificates
