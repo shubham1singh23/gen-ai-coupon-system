@@ -178,12 +178,23 @@ exports.validateCoupon = async (req, res) => {
     student.used = true;
     await student.save();
 
-    // Check if student is in first 50
-    const totalEarlierStudents = await Student.countDocuments({
-      createdAt: { $lt: student.createdAt }
-    });
+    // Check if student is in first 50 (only for Individual type)
+    let isInFirstFifty = false;
+    let offerMessage = '';
 
-    const isInFirstFifty = totalEarlierStudents < 50;
+    if (student.couponType === 'Individual') {
+      const totalEarlierIndividuals = await Student.countDocuments({
+        createdAt: { $lt: student.createdAt },
+        couponType: 'Individual'
+      });
+
+      isInFirstFifty = totalEarlierIndividuals < 50;
+      offerMessage = isInFirstFifty 
+        ? '🎁 Congratulations! You are eligible for 1 Hour FREE Gaming Session!' 
+        : '🎮 You get 30% discount on all gaming sessions';
+    } else {
+      offerMessage = '👥 Team Offer: Pay for 3 players and Play as 4!';
+    }
 
     return res.status(200).json({
       success: true,
@@ -193,7 +204,7 @@ exports.validateCoupon = async (req, res) => {
         name: student.name,
         couponType: student.couponType,
         isInFirstFifty,
-        firstFiftyMessage: isInFirstFifty ? 'Congratulations! You are eligible for the first fifty offer!' : 'Sorry, you are not in the first fifty registrations.'
+        offerMessage
       }
     });
 

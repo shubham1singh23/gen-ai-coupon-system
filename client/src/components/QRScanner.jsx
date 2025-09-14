@@ -266,13 +266,29 @@ const QRScanner = () => {
                     <div className="bg-gray-800 p-3 rounded text-white text-sm">
                         <p>{validationResult.msg}</p>
                         {validationResult.success && (
-                            <div className="mt-2 space-y-1">
-                                <p><strong>Name:</strong> {validationResult.data.name}</p>
-                                <p><strong>College ID:</strong> {validationResult.data.collegeId}</p>
-                                <p><strong>Coupon Type:</strong> {validationResult.data.couponType}</p>
-                                <p className={validationResult.data.isInFirstFifty ? 'text-green-400' : 'text-yellow-400'}>
-                                    {validationResult.data.firstFiftyMessage}
-                                </p>
+                            <div className="mt-2 space-y-2">
+                                <div className="space-y-1">
+                                    <p><strong>Name:</strong> {validationResult.data.name}</p>
+                                    <p><strong>College ID:</strong> {validationResult.data.collegeId}</p>
+                                    <p><strong>Coupon Type:</strong> {validationResult.data.couponType}</p>
+                                </div>
+                                <div className={`p-2 rounded ${
+                                    validationResult.data.isInFirstFifty 
+                                        ? 'bg-green-900 bg-opacity-30 border border-green-500' 
+                                        : validationResult.data.couponType === 'Team'
+                                            ? 'bg-blue-900 bg-opacity-30 border border-blue-500'
+                                            : 'bg-yellow-900 bg-opacity-30 border border-yellow-500'
+                                }`}>
+                                    <p className={
+                                        validationResult.data.isInFirstFifty 
+                                            ? 'text-green-300' 
+                                            : validationResult.data.couponType === 'Team'
+                                                ? 'text-blue-300'
+                                                : 'text-yellow-300'
+                                    }>
+                                        {validationResult.data.offerMessage}
+                                    </p>
+                                </div>
                             </div>
                         )}
                     </div>
