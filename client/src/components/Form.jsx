@@ -14,20 +14,39 @@ const Form = () => {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [generatedCoupon, setGeneratedCoupon] = useState('');
+    const [qrCodeDataURL, setQrCodeDataURL] = useState('');
+    const [emailSent, setEmailSent] = useState(false);
 
     const { collegeId, name, email, phone, couponType } = formData;
 
     const onChange = e => setFormData({ ...formData, [e.target.name]: e.target.value });
+
+    const downloadQRCode = () => {
+        if (!qrCodeDataURL) return;
+        
+        const link = document.createElement('a');
+        link.href = qrCodeDataURL;
+        link.download = `gaming-cafe-coupon-${generatedCoupon}.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
 
     const onSubmit = async e => {
         e.preventDefault();
         setMessage('');
         setError('');
         setLoading(true);
+        setGeneratedCoupon('');
+        setQrCodeDataURL('');
+        setEmailSent(false);
+        
         try {
             const res = await api.post('/api/students', formData);
             setMessage(res.data.msg);
             setGeneratedCoupon(res.data.student.couponCode);
+            setQrCodeDataURL(res.data.qrCodeDataURL);
+            setEmailSent(res.data.emailSent);
             setFormData({
                 collegeId: '',
                 name: '',
@@ -39,6 +58,8 @@ const Form = () => {
             const errorMsg = err.response?.data?.msg || 'An unexpected error occurred.';
             setError(errorMsg);
             setGeneratedCoupon('');
+            setQrCodeDataURL('');
+            setEmailSent(false);
             setTimeout(() => setError(''), 5000);
         } finally {
             setLoading(false);
@@ -52,106 +73,162 @@ const Form = () => {
                     <img src="https://res.cloudinary.com/dfkyivvyj/image/upload/v1757760973/Screenshot_2025-09-13_162410_gpzggm.png" alt="Logo" className="w-12 h-12 mx-auto mb-2"/>
                     <h1 className="text-2xl md:text-3xl font-bold text-white heading-font">Gaming Cafe.</h1>
                     <p className="mt-1 text-sm text-gray-400">Register Now for discount</p>
-                </div>            {message && <div className="p-4 text-center bg-green-900 bg-opacity-50 text-green-300 border border-green-700 rounded-lg message-box transition-all">{message}</div>}
-            {error && <div className="p-4 text-center bg-red-900 bg-opacity-50 text-red-300 border border-red-700 rounded-lg message-box transition-all">{error}</div>}
+                </div>
+                
+                {message && (
+                    <div className="p-4 text-center bg-green-900 bg-opacity-50 text-green-300 border border-green-700 rounded-lg message-box transition-all">
+                        {message}
+                    </div>
+                )}
+                
+                {error && (
+                    <div className="p-4 text-center bg-red-900 bg-opacity-50 text-red-300 border border-red-700 rounded-lg message-box transition-all">
+                        {error}
+                    </div>
+                )}
             
-            {generatedCoupon && (
-                <div className="p-6 text-center bg-blue-900 bg-opacity-50 border border-blue-700 rounded-lg">
-                    <h3 className="text-xl font-semibold text-blue-300 mb-2">Your Coupon Code</h3>
-                    <div className="bg-gray-900 p-4 rounded-lg">
-                        <code className="text-2xl font-mono text-blue-300 tracking-wider">{generatedCoupon}</code>
-                    </div>
-                    <p className="mt-2 text-gray-400 text-sm">If couldn't find email check in spam section</p>
-                    <p className="mt-2 text-gray-400 text-sm">Please save this code in case you don't receive the email</p>
-                </div>
-            )}
-
-            <form onSubmit={onSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div>
-                        <label htmlFor="collegeId" className="block text-xs font-medium text-gray-400 mb-1">College ID</label>
-                        <input type="text" name="collegeId" value={collegeId} onChange={onChange} required className="w-full px-3 py-1.5 text-sm rounded-lg form-input focus:outline-none" placeholder="e.g., 21ABC1234" />
-                    </div>
-                    <div>
-                        <label htmlFor="name" className="block text-xs font-medium text-gray-400 mb-1">Full Name</label>
-                        <input type="text" name="name" value={name} onChange={onChange} required className="w-full px-3 py-1.5 text-sm rounded-lg form-input focus:outline-none" placeholder="John Doe" />
-                    </div>
-                </div>
-                <div>
-                    <label htmlFor="email" className="block text-xs font-medium text-gray-400 mb-1">Email Address</label>
-                    <input type="email" name="email" value={email} onChange={onChange} required className="w-full px-3 py-1.5 text-sm rounded-lg form-input focus:outline-none" placeholder="you@example.com"/>
-                </div>
-                <div>
-                    <label htmlFor="phone" className="block text-xs font-medium text-gray-400 mb-1">Phone Number</label>
-                    <input type="tel" name="phone" value={phone} onChange={onChange} required className="w-full px-3 py-1.5 text-sm rounded-lg form-input focus:outline-none" placeholder="+91 1234567890" />
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label className="block text-xs font-medium text-gray-400 mb-2">Select Coupon Type</label>
-                        <div className="grid grid-cols-1 gap-3">
-                            <div
-                                onClick={() => setFormData({ ...formData, couponType: 'Individual' })}
-                                className={`cursor-pointer p-3 rounded-lg border-2 transition-all ${
-                                    couponType === 'Individual'
-                                        ? 'border-blue-500 bg-blue-900 bg-opacity-20'
-                                        : 'border-gray-700 hover:border-blue-400'
-                                }`}
-                            >
-                                <div className="flex items-center mb-1">
-                                    <div className={`w-4 h-4 rounded-full border-2 mr-2 flex items-center justify-center ${
-                                        couponType === 'Individual' ? 'border-blue-500' : 'border-gray-600'
-                                    }`}>
-                                        {couponType === 'Individual' && (
-                                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                                        )}
-                                    </div>
-                                    <h3 className="text-sm font-semibold text-white">Individual Offer</h3>
-                                </div>
-                                <div className="space-y-0.5 text-gray-300 pl-6 text-xs">
-                                    <p className="text-blue-300">Base Offer:</p>
-                                    <p>🎮 30% off on all gaming sessions</p>
-                                    <div className="mt-2 p-1.5 bg-green-900 bg-opacity-30 rounded border border-green-500">
-                                        <p className="text-green-400">🎁 First 50 Registrations Special:</p>
-                                        <p className="text-green-300 font-medium">1 Hour FREE Gaming Session!</p>
-                                        <p className="text-xs text-green-400 mt-1">*Exclusive to Individual registrations</p>
-                                    </div>
-                                </div>
+                {generatedCoupon && (
+                    <div className="p-6 bg-gradient-to-r from-blue-900 to-purple-900 bg-opacity-50 border border-blue-700 rounded-lg space-y-4">
+                        <div className="text-center">
+                            <h3 className="text-xl font-semibold text-blue-300 mb-2">🎉 Registration Successful!</h3>
+                            
+                            {/* Coupon Code Display */}
+                            <div className="bg-gray-900 p-4 rounded-lg mb-4">
+                                <p className="text-gray-400 text-sm mb-2">Your Coupon Code:</p>
+                                <code className="text-2xl font-mono text-blue-300 tracking-wider">{generatedCoupon}</code>
                             </div>
-
-                            <div
-                                onClick={() => setFormData({ ...formData, couponType: 'Team' })}
-                                className={`cursor-pointer p-3 rounded-lg border-2 transition-all ${
-                                    couponType === 'Team'
-                                        ? 'border-blue-500 bg-blue-900 bg-opacity-20'
-                                        : 'border-gray-700 hover:border-blue-400'
-                                }`}
-                            >
-                                <div className="flex items-center mb-1">
-                                    <div className={`w-4 h-4 rounded-full border-2 mr-2 flex items-center justify-center ${
-                                        couponType === 'Team' ? 'border-blue-500' : 'border-gray-600'
-                                    }`}>
-                                        {couponType === 'Team' && (
-                                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                                        )}
+                            
+                            {/* QR Code Display */}
+                            {qrCodeDataURL && (
+                                <div className="space-y-4">
+                                    <div className="bg-white p-4 rounded-lg inline-block">
+                                        <img 
+                                            src={qrCodeDataURL} 
+                                            alt="QR Code" 
+                                            className="w-48 h-48 mx-auto"
+                                        />
                                     </div>
-                                    <h3 className="text-sm font-semibold text-white">Team Offer</h3>
+                                    
+                                    <button
+                                        onClick={downloadQRCode}
+                                        className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center justify-center mx-auto gap-2"
+                                    >
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                                        </svg>
+                                        Download QR Code
+                                    </button>
                                 </div>
-                                <div className="space-y-0.5 text-gray-300 pl-6 text-xs">
-                                    <p className="text-blue-300">Squad Special:</p>
-                                    <p>👥 Pay for 3 Players</p>
-                                    <p className="text-blue-400 font-medium">Play as a Team of 4!</p>
-                                    <p className="text-xs text-blue-400 mt-1">Perfect for squad games</p>
+                            )}
+                            
+                            {/* Email Status */}
+                            <div className="mt-4 text-sm">
+                                {emailSent ? (
+                                    <p className="text-green-400">
+                                        ✅ QR code sent to your email! Check spam if not received.
+                                    </p>
+                                ) : (
+                                    <p className="text-yellow-400">
+                                     Please save the QR code using the download button above.
+                                    </p>
+                                )}
+                            </div>
+                            
+                            <div className="mt-4 p-3 bg-gray-800 rounded-lg">
+                                <p className="text-gray-300 text-sm">
+                                    📱 <strong>How to use:</strong> Show this QR code or coupon code at the gaming café counter to claim your discount!
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                <form onSubmit={onSubmit} className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                            <label htmlFor="collegeId" className="block text-xs font-medium text-gray-400 mb-1">College ID</label>
+                            <input type="text" name="collegeId" value={collegeId} onChange={onChange} required className="w-full px-3 py-1.5 text-sm rounded-lg form-input focus:outline-none" placeholder="e.g., 21ABC1234" />
+                        </div>
+                        <div>
+                            <label htmlFor="name" className="block text-xs font-medium text-gray-400 mb-1">Full Name</label>
+                            <input type="text" name="name" value={name} onChange={onChange} required className="w-full px-3 py-1.5 text-sm rounded-lg form-input focus:outline-none" placeholder="John Doe" />
+                        </div>
+                    </div>
+                    <div>
+                        <label htmlFor="email" className="block text-xs font-medium text-gray-400 mb-1">Email Address</label>
+                        <input type="email" name="email" value={email} onChange={onChange} required className="w-full px-3 py-1.5 text-sm rounded-lg form-input focus:outline-none" placeholder="you@example.com"/>
+                    </div>
+                    <div>
+                        <label htmlFor="phone" className="block text-xs font-medium text-gray-400 mb-1">Phone Number</label>
+                        <input type="tel" name="phone" value={phone} onChange={onChange} required className="w-full px-3 py-1.5 text-sm rounded-lg form-input focus:outline-none" placeholder="+91 1234567890" />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label className="block text-xs font-medium text-gray-400 mb-2">Select Coupon Type</label>
+                            <div className="grid grid-cols-1 gap-3">
+                                <div
+                                    onClick={() => setFormData({ ...formData, couponType: 'Individual' })}
+                                    className={`cursor-pointer p-3 rounded-lg border-2 transition-all ${
+                                        couponType === 'Individual'
+                                            ? 'border-blue-500 bg-blue-900 bg-opacity-20'
+                                            : 'border-gray-700 hover:border-blue-400'
+                                    }`}
+                                >
+                                    <div className="flex items-center mb-1">
+                                        <div className={`w-4 h-4 rounded-full border-2 mr-2 flex items-center justify-center ${
+                                            couponType === 'Individual' ? 'border-blue-500' : 'border-gray-600'
+                                        }`}>
+                                            {couponType === 'Individual' && (
+                                                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                            )}
+                                        </div>
+                                        <h3 className="text-sm font-semibold text-white">Individual Offer</h3>
+                                    </div>
+                                    <div className="space-y-0.5 text-gray-300 pl-6 text-xs">
+                                        <p className="text-blue-300">Base Offer:</p>
+                                        <p>🎮 30% off on all gaming sessions</p>
+                                        <div className="mt-2 p-1.5 bg-green-900 bg-opacity-30 rounded border border-green-500">
+                                            <p className="text-green-400">🎁 First 50 Registrations Special:</p>
+                                            <p className="text-green-300 font-medium">1 Hour FREE Gaming Session!</p>
+                                            <p className="text-xs text-green-400 mt-1">*Exclusive to Individual registrations</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div
+                                    onClick={() => setFormData({ ...formData, couponType: 'Team' })}
+                                    className={`cursor-pointer p-3 rounded-lg border-2 transition-all ${
+                                        couponType === 'Team'
+                                            ? 'border-blue-500 bg-blue-900 bg-opacity-20'
+                                            : 'border-gray-700 hover:border-blue-400'
+                                    }`}
+                                >
+                                    <div className="flex items-center mb-1">
+                                        <div className={`w-4 h-4 rounded-full border-2 mr-2 flex items-center justify-center ${
+                                            couponType === 'Team' ? 'border-blue-500' : 'border-gray-600'
+                                        }`}>
+                                            {couponType === 'Team' && (
+                                                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                            )}
+                                        </div>
+                                        <h3 className="text-sm font-semibold text-white">Team Offer</h3>
+                                    </div>
+                                    <div className="space-y-0.5 text-gray-300 pl-6 text-xs">
+                                        <p className="text-blue-300">Squad Special:</p>
+                                        <p>👥 Pay for 3 Players</p>
+                                        <p className="text-blue-400 font-medium">Play as a Team of 4!</p>
+                                        <p className="text-xs text-blue-400 mt-1">Perfect for squad games</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-                <div>
-                    <button type="submit" disabled={loading} className="w-full py-3 px-4 text-white rounded-lg submit-btn focus:outline-none focus:ring-4 focus:ring-blue-300 flex items-center justify-center">
-                        {loading ? <div className="loader"></div> : 'Register Now'}
-                    </button>
-                </div>
-            </form>
+                    <div>
+                        <button type="submit" disabled={loading} className="w-full py-3 px-4 text-white rounded-lg submit-btn focus:outline-none focus:ring-4 focus:ring-blue-300 flex items-center justify-center">
+                            {loading ? <div className="loader"></div> : 'Register Now'}
+                        </button>
+                    </div>
+                </form>
             </div>
             
             {/* Team Section */}
@@ -174,14 +251,10 @@ const Form = () => {
                         name="Vishal Harmankar"
                         link="https://www.linkedin.com/in/vishal-haramkar"
                     />
-                    <div className="flex items-center space-x-3 p-3 bg-gray-800 rounded-lg">
-                        <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
-                            <span className="text-white font-bold">G</span>
-                        </div>
-                        <div className="text-gray-300 font-medium">
-                            <span>Gargi Shelar</span>
-                        </div>
-                    </div>
+                    <TeamMember
+                        name="Gargi Shelar"
+                        link="https://www.linkedin.com/in/gargi-shelar-549969384"
+                    />
                 </div>
             </div>
         </div>

@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Create axios instance with base URL
 const api = axios.create({
-    baseURL: 'https://gen-ai-coupon-system.onrender.com',
+    baseURL: 'http://localhost:5000',
     withCredentials: true,
     headers: {
         'Content-Type': 'application/json',

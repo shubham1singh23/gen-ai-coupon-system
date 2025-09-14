@@ -25,7 +25,7 @@ async function sendEmail(email, code) {
       }
     });
     
-    let transporter = nodemailer.createTransport({
+    let transporter = nodemailer.createTransporter({
       host: 'smtp.gmail.com',
       port: 587,
       secure: false, // Use TLS
@@ -62,13 +62,13 @@ async function sendEmail(email, code) {
       <!-- Body -->
       <div style="text-align: center; padding: 20px;">
         <p style="font-size: 16px; line-height: 1.6; color: #ddd;">
-          You’ve unlocked an exclusive <b>Gaming Café Discount Coupon</b>!  
+          You've unlocked an exclusive <b>Gaming Café Discount Coupon</b>!  
           Show this QR code at the counter and boost your playtime ⚡
         </p>
 
         <!-- QR Code -->
         <div style="margin: 25px 0;">
-          <img src="cid:qrcode" alt="QR Code" style="border: 4px solid #00ff99; border-radius: 12px; max-width: 220px; box-shadow: 0 0 20px rgba(0,255,153,0.6);" />
+          <img src="data:image/png;base64,${qrCodeDataURL.split(',')[1]}" alt="QR Code" style="border: 4px solid #00ff99; border-radius: 12px; max-width: 220px; box-shadow: 0 0 20px rgba(0,255,153,0.6);" />
         </div>
 
         <!-- Code -->
@@ -78,7 +78,7 @@ async function sendEmail(email, code) {
         </p>
 
         <p style="font-size: 14px; color: #aaa; margin-top: 10px;">
-          ⚠️ Valid for one-time use only. Please don’t share this code with others.
+          ⚠️ Valid for one-time use only. Please don't share this code with others.
         </p>
       </div>
 
@@ -88,18 +88,8 @@ async function sendEmail(email, code) {
         Game On,<br/>🎮 <b>[Your Café Name]</b> Team
       </p>
     </div>
-  `,
-  attachments: [
-    {
-      filename: 'qrcode.png',
-      path: filepath,
-      cid: 'qrcode' // embed QR in email body
-    }
-  ]
+  `
 };
-
-
-  
   
       // Send email with detailed logging
     try {
@@ -136,6 +126,20 @@ exports.registerStudent = async (req, res) => {
       return res.status(400).json({ msg: 'A student with this College ID or Email already exists.' });
     }
 
+    // Generate QR code as base64 data URL for frontend
+    let qrCodeDataURL = null;
+    try {
+      qrCodeDataURL = await Qrcode.toDataURL(couponCode, {
+        color: {
+          dark: '#000',
+          light: '#FFF'
+        },
+        width: 256
+      });
+    } catch (qrError) {
+      console.error('Failed to generate QR code:', qrError);
+    }
+
     //new student instance
     student = new Student({
       collegeId,
@@ -146,21 +150,25 @@ exports.registerStudent = async (req, res) => {
       couponCode: couponCode || null, 
     });
 
+    // Try to send email but don't fail registration if email fails
+    let emailSent = false;
     try {
       await sendEmail(email, couponCode);
-      await student.save();
+      emailSent = true;
     } catch (emailError) {
       console.error('Failed to send email:', emailError);
-      // Still save the student but return a warning
-      await student.save();
-      return res.status(201).json({ 
-        msg: 'Student registered but email delivery failed. Please check the email address.',
-        student,
-        emailError: true
-      });
+      // Continue with registration even if email fails
     }
 
-    res.status(201).json({ msg: 'Student registered successfully!', student });
+    await student.save();
+
+    // Return success with QR code data
+    res.status(201).json({ 
+      msg: 'Student registered successfully!', 
+      student,
+      qrCodeDataURL,
+      emailSent
+    });
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server Error');
