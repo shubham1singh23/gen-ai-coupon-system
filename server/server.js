@@ -13,12 +13,32 @@ connectDB();
 const app = express();
 
 // Middleware
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', req.headers.origin);
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    
+    if (req.method === 'OPTIONS') {
+        return res.status(200).json({
+            body: "OK"
+        });
+    }
+    
+    next();
+});
+
 app.use(cors({
-    origin: ['http://localhost:3000','https://gen-ai-coupon-system-24he.vercel.app/'],
-    methods: ['GET', 'POST'],
+    origin: [
+        'http://localhost:3000',
+        'https://gen-ai-coupon-system-24he.vercel.app',
+        'https://gen-ai-coupon-system.vercel.app'
+    ],
     credentials: true,
-    allowedHeaders: ['Content-Type', 'Authorization']
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization']
 }));
+
 app.use(express.json());
 
 // Routes
