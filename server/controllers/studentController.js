@@ -15,35 +15,23 @@ function generateCouponCode(length = 10) {
   return coupon;
 }
 
-function sendEmail(email,code){
-
-  
-  const folderpath=path.join(__dirname,'qrcodes')
-  const filepath=path.join(folderpath,'qrcode.png')
-
-  if (!fs.existsSync(folderpath)) {
-  fs.mkdirSync(folderpath);
-}
-
-
-  Qrcode.toFile(filepath, code, {
-    color: {
-      dark: '#000',  // QR code color
-      light: '#FFF'  // Background color
-    }
-  }, function (err) {
-    if (err) console.log(err);
-    console.log('QR code saved!');
-  });
-  
-  
-  let transporter=nodemailer.createTransport({
+async function sendEmail(email, code) {
+  try {
+    // Generate QR code as data URL
+    const qrCodeDataURL = await Qrcode.toDataURL(code, {
+      color: {
+        dark: '#000',  // QR code color
+        light: '#FFF'  // Background color
+      }
+    });
+    
+    let transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
-        user: 'genaiclubternacollege@gmail.com',        // your Gmail address
-        pass: 'avhj grem bukj nnqj'  // Gmail App Password (not your regular password)
+        user: 'genaiclubternacollege@gmail.com',
+        pass: 'avhj grem bukj nnqj'
       }
-    })
+    });
   
     let mailOptions = {
   from: 'genaiclubternacollege@gmail.com',
@@ -99,12 +87,18 @@ function sendEmail(email,code){
 
   
   
-    transporter.sendMail(mailOptions, (error, info) => {
-      if (error) {
-        return console.log('Error sending email:', error);
-      }
-      console.log('Email sent: ' + info.response);
-    });
+      try {
+      const info = await transporter.sendMail(mailOptions);
+      console.log('Email sent successfully:', info.response);
+      return true;
+    } catch (error) {
+      console.error('Error sending email:', error);
+      throw new Error('Failed to send email: ' + error.message);
+    }
+  } catch (error) {
+    console.error('Error in sendEmail function:', error);
+    throw new Error('Failed to process email: ' + error.message);
+  }
 }
 
 exports.registerStudent = async (req, res) => {
@@ -128,9 +122,19 @@ exports.registerStudent = async (req, res) => {
       couponCode: couponCode || null, 
     });
 
-    sendEmail(email,couponCode);
-
-    await student.save();
+    try {
+      await sendEmail(email, couponCode);
+      await student.save();
+    } catch (emailError) {
+      console.error('Failed to send email:', emailError);
+      // Still save the student but return a warning
+      await student.save();
+      return res.status(201).json({ 
+        msg: 'Student registered but email delivery failed. Please check the email address.',
+        student,
+        emailError: true
+      });
+    }
 
     res.status(201).json({ msg: 'Student registered successfully!', student });
   } catch (err) {
